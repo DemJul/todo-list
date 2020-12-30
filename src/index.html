@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+    <title>Todo-list</title>
+    <link rel="stylesheet" href="main.css" />
+    <script src="./script.js" defer></script>
+</head>
+
+<body class="layout">
+    <header class="layout__header header">
+        <h2 class="header__title">Todo-list</h2>
+    </header>
+    <main class="layout__main todo">
+        <div class="todo__empty emptyList _hidden">
+            <button class="emptyList__button">+</button>
+            <span class="emptyList__text">Добавить задачу</span>
+        </div>
+        <div class="todo__listTask listTask _hidden">
+            <div class="listTask__item task">
+                <label class="task__name"><input
+              class="task__checkbox"
+              type="checkbox"
+              name="option1"
+              value="1"
+            />Завести будильник</label
+          >
+          <button class="task__delete">Удалить задачу</button>
+            </div>
+            <div class="listTask__item task">
+                <label class="task__name"
+                    ><input
+                    class="task__checkbox"
+                    type="checkbox"
+                    name="option1"
+                    value="1"
+                    />Завести будильник</label
+                >
+                <button class="task__delete">Удалить задачу</button>
+            </div>
+        </div>
+        <div class="todo__addForm addForm _hidden">
+            <form action="#">
+                <input class="addForm__input" type="text" name="input" placeholder="Ваша задача" autofocus required>
+                <div class="addForm__choose">
+                    <button class="addForm__add-bnt" type="submit">Добавить задачу</button>
+                    <button class="addForm__cancel-bnt" type="reset">Добавить задачу</button>
+                </div>
+            </form>
+            
+        </div>
+        
+    </main>
+    <footer class="layout__footer footer" style="background-color: gray;">TodoList 2020</footer>
+  </body>
+</html>
