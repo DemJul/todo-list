@@ -1,3 +1,15 @@
+//делегирование - 181 стр
+//разные способы создания/добавления элементов - appendChild, append, prepend,textContent,createElement
+//всегда удаляете выделенные ресурсы (обработчики)
+//обработка событий на разных стадиях - 236 стр(фаза перехвата)
+//preventDefault(194 стр) stopImmediatePropagation(184 стр) stopPropagation(260 стр)
+// в нужных местах применяете target/currentTarget - есть только target
+//работа с формой через форму - есть autofocus maxlength, а также использовала document.forms[0].elements.<nameInput>
+// кастомное событие через new Event -с 324 стр - 
+// создала два события emptyListTask и addTask, используются в MutationObserver
+// Drag and Drop c 258 строки
+
+
 let addTaskDiv = document.querySelector('.empty-list');
 let addFormDiv = document.querySelector('.add-form');
 let listDiv = document.querySelector('.list-task');
@@ -7,18 +19,14 @@ let btnAddTask = document.querySelector('.add-form__add-bnt');
 let btnCancel = document.querySelector('.add-form__cancel-bnt');
 
 let clearBtn = document.querySelector('.todo__delete-all');
-//скролл всегда будет внизу
-listDiv.scrollTop = listDiv.scrollHeight;
+
 
 let todo;
 let generateIdArr = [];
-// id задается один раз, а sortId меняется каждый раз, если пользователь
-//меняет порядок задач
-function Task(name, id = undefined, sortId, done = false) {
+// id задается один раз
+function Task(name, id = undefined) {
     this.name = name;
     this.id = id;
-    this.sortId = sortId;
-    this.done = done;
 }
 
 function ListTask(listTask = []) {
@@ -34,7 +42,6 @@ function ListTask(listTask = []) {
         if (!task instanceof Task) throw new Error("Данные не принадлежат Task");
         this.listTask.push(task);
         this.saveStorageTodo();
-        console.log(this.listTask);
     }
 
     this.saveStorageTodo = () => {
@@ -52,11 +59,15 @@ function ListTask(listTask = []) {
     }
 
     this.getIdElement = (element) => {
-        return element.querySelector('.task__checkbox').dataset.id;
+        return element ? element.querySelector('.task__checkbox').dataset.id : null;
     }
 
     this.getIndexTask = (id) => {
-        return this.listTask.findIndex(item => item.id === id)
+        if (id) {
+            return this.listTask.findIndex(item => item.id === id);
+        }
+        // Если последнего элемента нет, тогда берем последний из listTask
+        return this.listTask.length;
     }
 
     this.changeListTask = (activeElement, nextElement) => {
@@ -101,7 +112,15 @@ function startInit() {
         addFormDiv.classList.remove('_hidden');
 
     }
-    console.log(todo);
+    //скролл всегда будет внизу
+    listDiv.scrollTop = listDiv.scrollHeight;
+    setInterval(() => {
+        let newValue = document.forms.newTask.elements.task.value;
+
+        btnAddTask.disabled = (newValue === '') ? 'true' : '';
+        btnCancel.disabled = (newValue === '') ? 'true' : '';
+
+    }, 2000)
 
 }
 //вместе с формой появляется/исчезает кнопка очистить
@@ -116,28 +135,37 @@ function visibleList(isVisible) {
 }
 
 function generateTaskForm(text, idTask) {
-    let todoLength = todo.listTask.length;
-    let block = `<div class="list-task__item task" draggable="true">
-        <label class="task__name"
-            ><input
-            class="task__checkbox"
-            type="checkbox"
-            name="option${todoLength - 1 }"
-            data-id="${idTask}"
-            value="${todoLength - 1 }"
-            />${text}</label
-        >
-    </div>`;
-    return block;
+    // создание div для task
+    const taskDiv = document.createElement('div');
+    taskDiv.className = "list-task__item task";
+    taskDiv.setAttribute("draggable", 'true');
+    // создание div
+    const taskLabel = document.createElement('div');
+    taskLabel.className = "task__name";
+    // создание span
+    const taskSpan = document.createElement('span');
+    taskSpan.className = "task__text";
+    taskSpan.textContent = text;
+    taskLabel.append(taskSpan)
+
+    // создание input
+    const taskInput = document.createElement('input');
+    taskInput.className = "task__checkbox";
+    taskInput.setAttribute("type", 'checkbox');
+    taskInput.setAttribute("data-id", `${idTask}`);
+    taskLabel.prepend(taskInput);
+    taskDiv.prepend(taskLabel);
+    return taskDiv;
 }
 
 function renderListTask() {
-    let content = '';
+
+    let content = document.createDocumentFragment();
     todo.listTask.map(item => {
-        content += generateTaskForm(item.name, item.id);
+        content.append(generateTaskForm(item.name, item.id));
 
     });
-    listDiv.insertAdjacentHTML('beforeEnd', content);
+    listDiv.prepend(content);
 }
 
 function generateId() {
@@ -150,8 +178,12 @@ function generateId() {
     }
 }
 
-
+// делегирование
 window.addEventListener('click', (event) => {
+
+    // Прекращает дальнейшую передачу события
+    // и другие события click на window не сработают - не сработает вывод сообщение "Еще одно событие click"
+    event.stopImmediatePropagation();
     let classEvent = event.target.className;
     switch (classEvent) {
         case "empty-list__button":
@@ -159,26 +191,34 @@ window.addEventListener('click', (event) => {
             addTaskDiv.classList.add('_hidden');
             break;
         case "add-form__add-bnt":
+            // Отменяю действие браузера по умолчанию
+            //Теперь даже если есть в input required 
+            // Сообщение о пустом поле не появится
             event.preventDefault();
             let newValue = document.forms.newTask.elements.task.value;
             if (newValue !== '') {
                 let idTask = generateId();
-                todo.addTask(new Task(newValue, idTask, todo.getListTask().length));
+                todo.addTask(new Task(newValue, idTask));
                 let taskDiv = generateTaskForm(newValue, idTask);
                 event.target.form.reset();
-                listDiv.insertAdjacentHTML('beforeEnd', taskDiv);
+                listDiv.appendChild(taskDiv);
                 let eventAddTask = new Event('eventAddTask');
                 window.dispatchEvent(eventAddTask);
+                btnAddTask.disabled = 'true';
+                btnCancel.disabled = 'true';
             } else {
                 alert('Задача пустая');
                 // Возврат фокуса на input
                 document.querySelector(".add-form__input").focus();
             }
+            //скролл всегда будет внизу
+            listDiv.scrollTop = listDiv.scrollHeight;
             break;
         case "todo__delete-all":
             todo.clear();
-            // listDiv.innerHTML = '';
-            // Навигации
+            console.log('task', todo.listTask)
+                // listDiv.innerHTML = '';
+                // Навигации
             while (listDiv.firstChild) {
                 listDiv.removeChild(listDiv.lastChild);
             }
@@ -186,10 +226,24 @@ window.addEventListener('click', (event) => {
             window.dispatchEvent(emptyListTask);
             break;
     }
+
 });
 
+window.addEventListener('click', (event) => {
+    alert('Еще одно событие click');
+});
+
+// Обработка события при перехвате 
+window.addEventListener('click', (event) => {
+    if (event.target.className === 'todo__delete-all') {
+        let answer = confirm('Вы точно хотите очистить список?');
+        if (!answer) {
+            event.stopImmediatePropagation();
+        }
+    }
+}, true);
+
 window.addEventListener('emptyListTask', (event) => {
-    console.log(event);
     //убираем список задач и кнопку очистить
     visibleList(false);
     listDiv.innerHTML = '';
@@ -201,8 +255,12 @@ window.addEventListener('addTask', (event) => {
         visibleList(true);
     };
 });
-
+//Drag and Drop - перемещение задач
 listDiv.addEventListener(`dragstart`, (event) => {
+    //Дальше всплывать событию не нужно
+    //использую stopPropagation, а не stopImmediatePropagation,
+    //потому что другого события dragstart на listDiv нет
+    event.stopPropagation();
     event.target.classList.add(`_selected`);
 });
 
@@ -242,8 +300,6 @@ listDiv.addEventListener(`dragover`, (event) => {
     ) {
         return;
     }
-    console.log('active', activeElement)
-    console.log('next', nextElement)
     todo.changeListTask(activeElement, nextElement);
     listDiv.insertBefore(activeElement, nextElement);
 
@@ -265,7 +321,9 @@ window.addEventListener('input', (event) => {
             btnCancel.disabled = (event.target.value === '') ? 'true' : '';
     }
 });
-
+//MutationObserver - наблюдатль за кол-во задач в списке
+// и взависимости от кол-ва вызывает два кастомных события
+// emptyListTask или addTask
 let observer = new MutationObserver(mutationRecords => {
     if (mutationRecords[0].target.childNodes.length === 0) {
         let emptyListTask = new Event('emptyListTask');
@@ -280,5 +338,7 @@ let observer = new MutationObserver(mutationRecords => {
 observer.observe(listDiv, {
     childList: true, // наблюдать за непосредственными детьми
 });
+
+
 
 startInit();
