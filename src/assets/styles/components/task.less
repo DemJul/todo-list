@@ -1,0 +1,17 @@
+.task{
+
+    display: flex;
+    height: 30px;
+    background-color: rgb(114, 108, 102);
+    
+
+    &._selected {
+        opacity: 0.6;
+    }
+
+    &__name {
+        &._checked {
+            text-decoration: line-through;
+        }
+    }
+}

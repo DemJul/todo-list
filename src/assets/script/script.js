@@ -1,13 +1,23 @@
-let addTaskDiv = document.querySelector('.emptyList');
-let addFormDiv = document.querySelector('.addForm');
-let listDiv = document.querySelector('.listTask');
+let addTaskDiv = document.querySelector('.empty-list');
+let addFormDiv = document.querySelector('.add-form');
+let listDiv = document.querySelector('.list-task');
+let checkElement = document.getElementsByClassName('.task__checkbox');
 
-let clearBtn = document.querySelector('.todo__deleteAll');
+let btnAddTask = document.querySelector('.add-form__add-bnt');
+let btnCancel = document.querySelector('.add-form__cancel-bnt');
+
+let clearBtn = document.querySelector('.todo__delete-all');
+//скролл всегда будет внизу
+listDiv.scrollTop = listDiv.scrollHeight;
+
 let todo;
-
-function Task(name, id = undefined, done = false) {
+let generateIdArr = [];
+// id задается один раз, а sortId меняется каждый раз, если пользователь
+//меняет порядок задач
+function Task(name, id = undefined, sortId, done = false) {
     this.name = name;
     this.id = id;
+    this.sortId = sortId;
     this.done = done;
 }
 
@@ -23,15 +33,48 @@ function ListTask(listTask = []) {
     this.addTask = (task) => {
         if (!task instanceof Task) throw new Error("Данные не принадлежат Task");
         this.listTask.push(task);
-        this.saveStorageTodo(task);
+        this.saveStorageTodo();
+        console.log(this.listTask);
     }
 
-    this.saveStorageTodo = (task) => {
+    this.saveStorageTodo = () => {
         localStorage.setItem('listTask', JSON.stringify(listTask));
     }
 
     this.getListTask = () => {
         return this.listTask;
+    }
+
+    this.deleteTask = (idTask) => {
+        let indexTask = this.listTask.findIndex(item => item.id === idTask);
+        this.listTask.splice(indexTask, 1);
+        this.saveStorageTodo();
+    }
+
+    this.getIdElement = (element) => {
+        return element.querySelector('.task__checkbox').dataset.id;
+    }
+
+    this.getIndexTask = (id) => {
+        return this.listTask.findIndex(item => item.id === id)
+    }
+
+    this.changeListTask = (activeElement, nextElement) => {
+        let idActive = this.getIdElement(activeElement);
+        let idNext = this.getIdElement(nextElement);
+
+        let indexActive = this.getIndexTask(idActive);
+        let indexNext = this.getIndexTask(idNext);
+
+        let transformTask = this.listTask[indexActive];
+        this.listTask.splice(indexActive, 1)
+        if (indexActive > indexNext) {
+            this.listTask.splice(indexNext, 0, transformTask)
+        } else {
+            this.listTask.splice(indexNext - 1, 0, transformTask)
+        }
+
+        this.saveStorageTodo();
     }
 
     this.clear = () => {
@@ -72,18 +115,18 @@ function visibleList(isVisible) {
     }
 }
 
-function generateTaskForm(text) {
+function generateTaskForm(text, idTask) {
     let todoLength = todo.listTask.length;
-    let block = `<div class="listTask__item task">
+    let block = `<div class="list-task__item task" draggable="true">
         <label class="task__name"
             ><input
             class="task__checkbox"
             type="checkbox"
             name="option${todoLength - 1 }"
+            data-id="${idTask}"
             value="${todoLength - 1 }"
             />${text}</label
         >
-        <button class="task__delete">Удалить задачу</button>
     </div>`;
     return block;
 }
@@ -91,40 +134,58 @@ function generateTaskForm(text) {
 function renderListTask() {
     let content = '';
     todo.listTask.map(item => {
-        content += generateTaskForm(item.name);
+        content += generateTaskForm(item.name, item.id);
 
     });
     listDiv.insertAdjacentHTML('beforeEnd', content);
 }
 
+function generateId() {
+    let randNumber = Math.random().toString(36).substr(2, 9);
+    if (generateIdArr.includes(randNumber)) {
+        return generateId();
+    } else {
+        generateIdArr.push(randNumber);
+        return randNumber
+    }
+}
+
 
 window.addEventListener('click', (event) => {
     let classEvent = event.target.className;
-    if (classEvent === "emptyList__button") {
-        addFormDiv.classList.remove('_hidden');
-        addTaskDiv.classList.add('_hidden');
-    } else if (classEvent === "addForm__add-bnt") {
-        event.preventDefault();
-        let newValue = event.target.form.elements.input.value;
-        console.log(todo);
-        todo.addTask(new Task(newValue));
-        let taskDiv = generateTaskForm(newValue);
-        event.target.form.reset();
-        listDiv.insertAdjacentHTML('beforeEnd', taskDiv);
-        let eventAddTask = new Event('eventAddTask');
-        window.dispatchEvent(eventAddTask);
-        console.log(listDiv);
-    } else if (classEvent === "todo__deleteAll") {
-        todo.clear();
-        // listDiv.innerHTML = '';
-        // Использование навигации
-        while (listDiv.firstChild) {
-            listDiv.removeChild(listDiv.lastChild);
-        }
-        let emptyListTask = new Event('emptyListTask');
-        window.dispatchEvent(emptyListTask);
+    switch (classEvent) {
+        case "empty-list__button":
+            addFormDiv.classList.remove('_hidden');
+            addTaskDiv.classList.add('_hidden');
+            break;
+        case "add-form__add-bnt":
+            event.preventDefault();
+            let newValue = document.forms.newTask.elements.task.value;
+            if (newValue !== '') {
+                let idTask = generateId();
+                todo.addTask(new Task(newValue, idTask, todo.getListTask().length));
+                let taskDiv = generateTaskForm(newValue, idTask);
+                event.target.form.reset();
+                listDiv.insertAdjacentHTML('beforeEnd', taskDiv);
+                let eventAddTask = new Event('eventAddTask');
+                window.dispatchEvent(eventAddTask);
+            } else {
+                alert('Задача пустая');
+                // Возврат фокуса на input
+                document.querySelector(".add-form__input").focus();
+            }
+            break;
+        case "todo__delete-all":
+            todo.clear();
+            // listDiv.innerHTML = '';
+            // Навигации
+            while (listDiv.firstChild) {
+                listDiv.removeChild(listDiv.lastChild);
+            }
+            let emptyListTask = new Event('emptyListTask');
+            window.dispatchEvent(emptyListTask);
+            break;
     }
-    console.log(event.target);
 });
 
 window.addEventListener('emptyListTask', (event) => {
@@ -139,6 +200,70 @@ window.addEventListener('addTask', (event) => {
         //добавляем список задач и кнопку очистить
         visibleList(true);
     };
+});
+
+listDiv.addEventListener(`dragstart`, (event) => {
+    event.target.classList.add(`_selected`);
+});
+
+listDiv.addEventListener(`dragend`, (event) => {
+    let activeElement = event.target;
+    activeElement.classList.remove(`_selected`);
+});
+
+function getNextElement(cursorPosition, currentElement) {
+    let currentElementCoord = currentElement.getBoundingClientRect();
+    let currentElementCenter = currentElementCoord.y + currentElementCoord.height / 2;
+    let nextElement = (cursorPosition < currentElementCenter) ?
+        currentElement :
+        currentElement.nextElementSibling;
+    return nextElement;
+};
+
+listDiv.addEventListener(`dragover`, (event) => {
+    event.preventDefault();
+
+    let activeElement = listDiv.querySelector(`._selected`);
+    let currentElement = event.target.closest('.list-task__item')
+
+    let isMoveable = activeElement !== currentElement &&
+        currentElement.classList.contains(`list-task__item`);
+
+    if (!isMoveable) {
+        return;
+    }
+
+    let nextElement = getNextElement(event.clientY, currentElement);
+
+    if (
+        nextElement &&
+        activeElement === nextElement.previousElementSibling ||
+        activeElement === nextElement
+    ) {
+        return;
+    }
+    console.log('active', activeElement)
+    console.log('next', nextElement)
+    todo.changeListTask(activeElement, nextElement);
+    listDiv.insertBefore(activeElement, nextElement);
+
+
+});
+
+window.addEventListener('input', (event) => {
+    let eventClass = event.target.className;
+    switch (eventClass) {
+        case 'task__checkbox':
+            todo.deleteTask(event.target.dataset.id);
+            event.target.closest('.task').remove();
+            if (todo.getListTask().length === 0) {
+                let emptyListTask = new Event('emptyListTask');
+                window.dispatchEvent(emptyListTask);
+            }
+        case 'add-form__input':
+            btnAddTask.disabled = (event.target.value === '') ? 'true' : '';
+            btnCancel.disabled = (event.target.value === '') ? 'true' : '';
+    }
 });
 
 let observer = new MutationObserver(mutationRecords => {

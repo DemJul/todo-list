@@ -14,27 +14,27 @@
         <h2 class="header__title">Todo-list</h2>
     </header>
     <main class="layout__main todo">
-        <div class="todo__empty emptyList _hidden">
-            <button class="emptyList__button">+</button>
-            <span class="emptyList__text">Добавить задачу</span>
+        <div class="todo__empty-list empty-list _hidden">
+            <button class="empty-list__button">+</button>
+            <span class="empty-list__text">Добавить задачу</span>
         </div>
-        <div class="todo__listTask listTask _hidden">
+        <div class="todo__list-task list-task _hidden">
 
         </div>
-        <div class="todo__addForm addForm _hidden">
-            <form action="#">
-                <input class="addForm__input" type="text" name="input" placeholder="Ваша задача" autofocus required>
-                <div class="addForm__choose">
-                    <button class="addForm__add-bnt" type="submit">Добавить задачу</button>
-                    <button class="addForm__cancel-bnt" type="reset">Отмена</button>
+        <div class="todo__add-form add-form _hidden">
+            <form action="#" name='newTask'>
+                <input class="add-form__input" type="text" name="task" required placeholder="Ваша задача" value='' autofocus maxlength="50">
+                <div class="add-form__choose">
+                    <button class="add-form__add-bnt" type="submit" disabled>Добавить задачу</button>
+                    <button class="add-form__cancel-bnt" type="reset" disabled>Отмена</button>
                 </div>
             </form>
 
         </div>
-        <button class="todo__deleteAll _hidden">Очистить</button>
+        <button class="todo__delete-all _hidden">Очистить</button>
 
     </main>
-    <footer class="layout__footer footer" style="background-color: gray;">TodoList 2020</footer>
+    <footer class="layout__footer footer">TodoList 2020</footer>
 </body>
 
 </html>
